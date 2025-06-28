@@ -74,11 +74,14 @@ async def salvar_embedding(request: Request):
 
         # Corrigir a URL se estiver incompleta (sem ?alt=media)
         if "alt=media" not in url:
-            if "/o/" in url:
-                filename_encoded = url.split("/o/")[1]
-                if "?" in filename_encoded:
-                    filename_encoded = filename_encoded.split("?")[0]
-                url = f"https://firebasestorage.googleapis.com/v0/b/almanaque-d6ba0.firebasestorage.app/o/{filename_encoded}?alt=media"
+            # Caso tenha token, preserve
+            if "token=" in url:
+                url = url.split("?")[0] + "?" + url.split("?")[1]
+            else:
+                # Se não tiver token, gera a versão sem token mas com alt=media
+                if "/o/" in url:
+                    filename_encoded = url.split("/o/")[1].split("?")[0]
+                    url = f"https://firebasestorage.googleapis.com/v0/b/almanaque-d6ba0.firebasestorage.app/o/{filename_encoded}?alt=media"
 
         db.collection("embeddings").add({
             "url": url,
@@ -88,6 +91,7 @@ async def salvar_embedding(request: Request):
         return {"success": True}
     except Exception as e:
         return {"success": False, "message": str(e)}
+
 
 @app.post("/reconhecer")
 async def reconhecer(file: UploadFile = File(...)):
