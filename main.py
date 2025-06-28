@@ -92,7 +92,6 @@ async def salvar_embedding(request: Request):
     except Exception as e:
         return {"success": False, "message": str(e)}
 
-
 @app.post("/reconhecer")
 async def reconhecer(file: UploadFile = File(...)):
     try:
@@ -118,6 +117,21 @@ async def reconhecer(file: UploadFile = File(...)):
             url = data.get("url")
 
             print("🔎 Verificando embedding:", url)
+
+            # Normalizar URL para garantir compatibilidade
+            if url and "firebasestorage.googleapis.com" in url:
+                # Se já contém alt=media ou token, mantém como está
+                if "alt=media" not in url and "token=" not in url:
+                    # Extrai o caminho do arquivo
+                    if "/o/" in url:
+                        filename_encoded = url.split("/o/")[1].split("?")[0]
+                        # Constrói URL pública com ?alt=media
+                        url = f"https://firebasestorage.googleapis.com/v0/b/almanaque-d6ba0.firebasestorage.app/o/{filename_encoded}?alt=media"
+            elif url and "storage.googleapis.com" in url:
+                # Converte URLs antigas do storage.googleapis.com
+                if "/criminosos/" in url:
+                    filename_encoded = quote(url.split("/criminosos/")[1].split("?")[0])
+                    url = f"https://firebasestorage.googleapis.com/v0/b/almanaque-d6ba0.firebasestorage.app/o/criminosos%2F{filename_encoded}?alt=media"
 
             if isinstance(vetor, list) and len(vetor) == 512 and url:
                 sim = cosine_similarity(input_embedding, vetor)
