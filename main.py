@@ -14,8 +14,9 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# Inicializa Firebase
-cred = credentials.Certificate("firebase-adminsdk.json")
+# Inicializa Firebase com credenciais da variável de ambiente
+firebase_config = json.loads(os.getenv("GOOGLE_CREDENTIALS"))
+cred = credentials.Certificate(firebase_config)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
