@@ -9,6 +9,7 @@ import numpy as np
 import requests
 from pydantic import BaseModel
 import os
+from urllib.parse import quote
 
 # Firebase Admin
 import firebase_admin
@@ -71,6 +72,14 @@ async def salvar_embedding(request: Request):
 
         print("📥 Novo embedding recebido:", url)
 
+        # Corrigir a URL se estiver incompleta (sem ?alt=media)
+        if "alt=media" not in url:
+            if "/o/" in url:
+                filename_encoded = url.split("/o/")[1]
+                if "?" in filename_encoded:
+                    filename_encoded = filename_encoded.split("?")[0]
+                url = f"https://firebasestorage.googleapis.com/v0/b/almanaque-d6ba0.appspot.com/o/{filename_encoded}?alt=media"
+
         db.collection("embeddings").add({
             "url": url,
             "embedding": embedding
@@ -115,7 +124,6 @@ async def reconhecer(file: UploadFile = File(...)):
     except Exception as e:
         return {"success": False, "message": str(e)}
 
-# Endpoint opcional de debug
 @app.get("/debug/total-embeddings")
 async def contar_embeddings():
     docs = db.collection("embeddings").stream()
