@@ -78,7 +78,7 @@ async def salvar_embedding(request: Request):
                 filename_encoded = url.split("/o/")[1]
                 if "?" in filename_encoded:
                     filename_encoded = filename_encoded.split("?")[0]
-                url = f"https://firebasestorage.googleapis.com/v0/b/almanaque-d6ba0.appspot.com/o/{filename_encoded}?alt=media"
+                url = f"https://firebasestorage.googleapis.com/v0/b/almanaque-d6ba0.firebasestorage.app/o/{filename_encoded}?alt=media"
 
         db.collection("embeddings").add({
             "url": url,
