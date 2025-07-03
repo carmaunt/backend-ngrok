@@ -15,8 +15,15 @@ from urllib.parse import quote
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# Inicializa Firebase com credenciais da variável de ambiente
-firebase_config = json.loads(os.getenv("GOOGLE_CREDENTIALS"))
+# Valida e inicializa Firebase com credenciais da variável de ambiente
+firebase_credentials = os.getenv("GOOGLE_CREDENTIALS")
+if not firebase_credentials:
+    raise ValueError("Variável de ambiente GOOGLE_CREDENTIALS não definida")
+try:
+    firebase_config = json.loads(firebase_credentials)
+except json.JSONDecodeError as e:
+    raise ValueError(f"Erro ao decodificar GOOGLE_CREDENTIALS: {str(e)}")
+
 cred = credentials.Certificate(firebase_config)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -108,7 +115,8 @@ async def reconhecer(file: UploadFile = File(...)):
         def cosine_similarity(v1, v2):
             return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
 
-        resultados = []
+        melhor_resultado = None
+        maior_similaridade = -1.0
 
         docs = db.collection("embeddings").stream()
         for doc in docs:
@@ -135,10 +143,15 @@ async def reconhecer(file: UploadFile = File(...)):
 
             if isinstance(vetor, list) and len(vetor) == 512 and url:
                 sim = cosine_similarity(input_embedding, vetor)
-                resultados.append({"url": url, "similaridade": sim})
+                if sim > maior_similaridade:
+                    maior_similaridade = sim
+                    melhor_resultado = {"url": url, "similaridade": sim}
 
-        resultados.sort(key=lambda x: x["similaridade"], reverse=True)
-        return {"success": True, "resultados": resultados[:5]}
+        if melhor_resultado:
+            return {"success": True, "resultado": melhor_resultado}
+        else:
+            return {"success": False, "message": "Nenhum embedding compatível encontrado"}
+
     except Exception as e:
         return {"success": False, "message": str(e)}
 
